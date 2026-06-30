@@ -1,0 +1,12 @@
+{
+  "name": "boke",
+  "version": "1.0.0",
+  "private": true,
+  "description": "个人博客项目 - Vue 3 前端 + Node.js 后端",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:server": "cd server && node index.js",
+    "build": "cd frontend && npm run build",
+    "start": "cd server && node index.js"
+  }
+}
