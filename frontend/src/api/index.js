@@ -4,7 +4,21 @@ const api = axios.create({
   baseURL: '/api',
   timeout: 10000
 })
-
+// 请求拦截器
+api.interceptors.request.use(
+  config => {
+    // 可以在这里添加请求头或其他配置
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    return config
+  },
+  error => {
+    console.error('Request Error:', error)
+    return Promise.reject(error)
+  }
+)
 // 响应拦截器
 api.interceptors.response.use(
   response => response.data,
@@ -43,6 +57,14 @@ export const commentApi = {
   // 提交评论
   create(data) {
     return api.post('/comments', data)
+  }
+}
+
+// 站点统计 API
+export const statsApi = {
+  // 获取站点统计（PV/UV）
+  get() {
+    return api.get('/stats')
   }
 }
 

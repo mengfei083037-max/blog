@@ -9,6 +9,67 @@ const PORT = 3001
 app.use(cors())
 app.use(express.json())
 
+// ========== 站点统计（内存存储） ==========
+const stats = {
+  pv: 0,
+  // 存储今天已计数的 UV key（IP+UA 的 hash），格式: { 'ip:uaHash': true }
+  todayUV: new Map(),
+  lastResetDate: new Date().toDateString()
+}
+
+// 重置每日 UV 记录
+function resetDailyUV() {
+  const today = new Date().toDateString()
+  if (stats.lastResetDate !== today) {
+    stats.todayUV = new Map()
+    stats.lastResetDate = today
+  }
+}
+
+// 简单的字符串哈希
+function hashString(str) {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36)
+}
+
+// 统计中间件 - 记录 PV 和 UV
+app.use((req, res, next) => {
+  // 只统计页面访问（GET 请求且不是 API 路径）
+  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+    resetDailyUV()
+
+    // PV：每次访问 +1
+    stats.pv++
+
+    // UV：基于 IP + User-Agent 去重，每天只计一次
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown'
+    const ua = req.headers['user-agent'] || ''
+    const uvKey = `${ip}:${hashString(ua)}`
+
+    if (!stats.todayUV.has(uvKey)) {
+      stats.todayUV.set(uvKey, true)
+    }
+  }
+  next()
+})
+
+// GET /api/stats - 获取站点统计信息
+app.get('/api/stats', (req, res) => {
+  resetDailyUV()
+  res.json({
+    code: 200,
+    data: {
+      pv: stats.pv,
+      uv: stats.todayUV.size
+    }
+  })
+})
+
 // ========== 博客文章接口 ==========
 
 // GET /api/posts - 获取文章列表
