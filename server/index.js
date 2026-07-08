@@ -37,25 +37,26 @@ function hashString(str) {
   return Math.abs(hash).toString(36)
 }
 
-// 统计中间件 - 记录 PV 和 UV
-app.use((req, res, next) => {
-  // 只统计页面访问（GET 请求且不是 API 路径）
-  if (req.method === 'GET' && !req.path.startsWith('/api')) {
-    resetDailyUV()
+// POST /api/track - 记录页面访问（由前端路由切换时调用）
+app.post('/api/track', (req, res) => {
+  resetDailyUV()
 
-    // PV：每次访问 +1
-    stats.pv++
+  // PV：每次访问 +1
+  stats.pv++
 
-    // UV：基于 IP + User-Agent 去重，每天只计一次
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown'
-    const ua = req.headers['user-agent'] || ''
-    const uvKey = `${ip}:${hashString(ua)}`
+  // UV：基于 IP + User-Agent 去重，每天只计一次
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown'
+  const ua = req.headers['user-agent'] || ''
+  const uvKey = `${ip}:${hashString(ua)}`
 
-    if (!stats.todayUV.has(uvKey)) {
-      stats.todayUV.set(uvKey, true)
-    }
+  if (!stats.todayUV.has(uvKey)) {
+    stats.todayUV.set(uvKey, true)
   }
-  next()
+
+  res.json({
+    code: 200,
+    message: 'ok'
+  })
 })
 
 // GET /api/stats - 获取站点统计信息

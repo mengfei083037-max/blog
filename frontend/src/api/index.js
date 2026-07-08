@@ -65,6 +65,10 @@ export const statsApi = {
   // 获取站点统计（PV/UV）
   get() {
     return api.get('/stats')
+  },
+  // 记录页面访问（PV/UV）
+  track() {
+    return api.post('/track')
   }
 }
 
